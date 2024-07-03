@@ -1,6 +1,5 @@
 package com.example.period_recorder.executeManager
 
-import com.example.period_recorder.audioRecorder.AndroidAudioRecorder
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -8,21 +7,25 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM
 import android.util.Log
+import android.widget.Toast
+import com.example.period_recorder.audioRecorder.AndroidAudioRecorder
+import com.example.period_recorder.storage.GetFilename
+import java.io.File
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-private const val TAG = "PeriodRecorder_ExecutorTest"
+private const val TAG = "PR_ExecutorTest"
 
-class DoTest(private val context: Context)  {
+class SettingPR(private val context: Context) {
 
-    private var recorder = AndroidAudioRecorder(context)
+    private var recorder = AndroidAudioRecorder()
 
     private val alarmManager: AlarmManager =
         context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     fun setAlarm(triggerTime: Long, intent: Intent) {
-        val intentExample = Intent(context, PeriodRecord(recorder)::class.java)
-//        val intentExample = Intent(context, PeriodRecord()::class.java)
+        val intentExample = Intent(context, PeriodRecord()::class.java)
+        intentExample.putExtra("object", recorder)
 
         val pendingIntent = PendingIntent.getBroadcast(
             context,
@@ -31,15 +34,15 @@ class DoTest(private val context: Context)  {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
 
         when {
-
             // If permission is granted, proceed with scheduling exact alarms.
             alarmManager.canScheduleExactAlarms() -> {
-                Log.v(TAG, "setAlarm");
-
                 alarmManager.setExactAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
-                    LocalDateTime.now().atZone(ZoneId.systemDefault()).toEpochSecond() * 1000 + 1000,
+                    LocalDateTime.now().atZone(ZoneId.systemDefault()).toEpochSecond() * 1000 + 10000,
                     pendingIntent)
+
+                Log.v(TAG, "setAlarm");
+                Toast.makeText(context, "[PR_ExecutorTest] setAlarm", Toast.LENGTH_SHORT).show()
             }
             else -> {
                 // Ask users to go to exact alarm page in system settings.
@@ -49,8 +52,8 @@ class DoTest(private val context: Context)  {
     }
 
     fun setStop(triggerTime: Long, intent: Intent) {
-        Log.v(TAG, "setStop");
-        val intentExample = Intent(context, EndRecord(recorder)::class.java)
+        val intentExample = Intent(context, EndRecord()::class.java)
+        intentExample.putExtra("object", recorder)
 
         val pendingIntent = PendingIntent.getBroadcast(
             context,
@@ -61,9 +64,11 @@ class DoTest(private val context: Context)  {
         when {
             // If permission is granted, proceed with scheduling exact alarms.
             alarmManager.canScheduleExactAlarms() -> {
+                Log.v(TAG, "setStop");
+
                 alarmManager.setExactAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
-                    LocalDateTime.now().atZone(ZoneId.systemDefault()).toEpochSecond() * 1000 + 30000,
+                    LocalDateTime.now().atZone(ZoneId.systemDefault()).toEpochSecond() * 1000 + 20000,
                     pendingIntent)
             }
             else -> {
@@ -100,38 +105,39 @@ class DoTest(private val context: Context)  {
     }
 }
 
-class PeriodRecord(private var recorder: AndroidAudioRecorder ): BroadcastReceiver(){
-//class PeriodRecord(): BroadcastReceiver(){
+class PeriodRecord: BroadcastReceiver(){
     override fun onReceive(context: Context?, intent: Intent?) {
-        Log.v(TAG, "[PeriodRecord] start");
-//
-//        if(context != null)
-//        {
-//            recorder = AndroidAudioRecorder(context)
-//            val path = GetFilename().getName()
-//            File(path).also {
-//                recorder.start(it)
-//                Log.v(TAG, it.toString());
-//            }
-//            Toast.makeText(context, "Period record!", Toast.LENGTH_SHORT).show()
-//        }
-//        else
-//        {
-//            Log.v(TAG, "[PeriodRecord] Error handle, context is null");
-//        }
+        if(context != null)
+        {
+            val derivedObject = intent?.getSerializableExtra("object") as AndroidAudioRecorder
+
+            val path = GetFilename().getName()
+            File(path).also {
+                derivedObject.start(it, context)
+                Log.v(TAG, it.toString());
+            }
+            Log.v(TAG, "start");
+            Toast.makeText(context, "[PR_ExecutorTest] start", Toast.LENGTH_SHORT).show()
+        }
+        else
+        {
+            Log.v(TAG, "[PR_ExecutorTest] Error handle, context is null");
+        }
     }
 }
 
-class EndRecord(private var recorder: AndroidAudioRecorder ): BroadcastReceiver(){
+class EndRecord: BroadcastReceiver(){
     override fun onReceive(context: Context?, intent: Intent?) {
-        Log.v(TAG, "[PeriodRecord] end");
-//        if(context != null)
-//        {
-//            recorder.stop()
-//        }
-//        else
-//        {
-//            Log.v(TAG, "[EndRecord] Error handle, context is null");
-//        }
+        val derivedObject = intent?.getSerializableExtra("object") as AndroidAudioRecorder
+        if(context != null)
+        {
+            derivedObject.stop()
+            Log.v(TAG, "end");
+            Toast.makeText(context, "[PR_ExecutorTest] end", Toast.LENGTH_SHORT).show()
+        }
+        else
+        {
+            Log.v(TAG, "[PR_ExecutorTest] Error handle, context is null");
+        }
     }
 }

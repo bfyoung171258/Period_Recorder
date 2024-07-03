@@ -1,32 +1,24 @@
 package com.example.period_recorder
 
 import android.Manifest
-import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.os.Environment
-import android.os.storage.StorageManager
-import android.os.storage.StorageManager.ACTION_MANAGE_STORAGE
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
-import androidx.core.content.getSystemService
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import java.io.File
-import java.util.UUID
 
 import androidx.core.app.ActivityCompat
 
 import com.example.period_recorder.audioRecorder.AndroidAudioRecorder
 import com.example.period_recorder.storage.StorageChecker
 import com.example.period_recorder.storage.GetFilename
-import com.example.period_recorder.executeManager.DoTest
+import com.example.period_recorder.executeManager.SettingPR
 
 private const val TAG = "PR_Main"
 
@@ -38,9 +30,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnScheduleStart: Button
     private lateinit var btnScheduleEnd: Button
     private var storageAccessCheck = StorageChecker()
-    private val recorder by lazy {
-        AndroidAudioRecorder(applicationContext)
-    }
+    private val recorder = AndroidAudioRecorder()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,9 +73,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnScheduleStart.setOnClickListener {
-            val test = DoTest(this)
-            test.setAlarm(5, Intent(this, this::class.java))
-//            test.setStop(5, Intent(this, this::class.java))
+            val pr = SettingPR(this)
+            pr.setAlarm(5, Intent(this, this::class.java))
+            pr.setStop(5, Intent(this, this::class.java))
         }
 
         btnScheduleEnd.setOnClickListener {
@@ -100,7 +90,7 @@ class MainActivity : AppCompatActivity() {
 
         val path = GetFilename().getName()
         File(path).also {
-            recorder.start(it)
+            recorder.start(it, this)
             Log.v(TAG, it.toString());
         }
     }

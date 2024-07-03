@@ -24,8 +24,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-<!--        <receiver android:name=".executeManager.PeriodRecord" />-->
-<!--        <receiver android:name=".executeManager.EndRecord" />-->
+        <receiver android:name=".executeManager.PeriodRecord" />
+        <receiver android:name=".executeManager.EndRecord" />
     </application>
 
 </manifest>
