@@ -1,6 +1,7 @@
 package com.example.period_recorder
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -27,12 +28,7 @@ import com.example.period_recorder.storage.StorageChecker
 import com.example.period_recorder.storage.GetFilename
 import com.example.period_recorder.executeManager.DoTest
 
-private const val TAG = "PeriodRecorder_Main"
-
-private const val REQUEST_RECORD_AUDIO_PERMISSION = 200
-private const val CREATE_FILE_REQUEST_CODE = 1
-
-private const val NUM_BYTES_NEEDED_FOR_MY_APP = 1024 * 1024 * 20L
+private const val TAG = "PR_Main"
 
 class MainActivity : AppCompatActivity() {
 
@@ -41,11 +37,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnEnd: Button
     private lateinit var btnScheduleStart: Button
     private lateinit var btnScheduleEnd: Button
-
+    private var storageAccessCheck = StorageChecker()
     private val recorder by lazy {
         AndroidAudioRecorder(applicationContext)
     }
-    private var storageAccessCheck = StorageChecker()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,12 +58,10 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
         findViews()
 
-        Log.v(TAG, "Access of external storage: " +
-            "read(${storageAccessCheck.externalStorageRead}), " +
-                    "write(${storageAccessCheck.externalStorageWrite})");
-        checkRequestSize()
+        storageAccessCheck.checkRequestSize(applicationContext)
     }
 
     private fun findViews() {
@@ -117,77 +110,7 @@ class MainActivity : AppCompatActivity() {
         btnEnd.isEnabled = false
 
         Toast.makeText(this, "Recording stop", Toast.LENGTH_SHORT).show()
-
-        createInternalFile()
-        createExternalFile()
-
         recorder.stop()
-    }
-
-    private fun createInternalFile() {
-        val filename = "internalFile.txt"
-        val fileContents = "Hello world!"
-        this.openFileOutput(filename, Context.MODE_PRIVATE).use {
-            it.write(fileContents.toByteArray())
-        }
-
-        this.openFileInput(filename).bufferedReader().useLines { lines ->
-            lines.fold("") { some, text ->
-                "$some\n$text"
-            }
-        }
-
-        val dirName = File("abcD")
-        this.getDir(dirName.path, Context.MODE_PRIVATE)
-
-        val path = filesDir.absolutePath
-        Log.v(TAG, path.toString());
-    }
-
-    private fun createExternalFile() {
-        // select volume
-        val externalStorageVolumes: Array<out File> =
-            ContextCompat.getExternalFilesDirs(applicationContext, null)
-        val primaryExternalStorage = externalStorageVolumes[0]
-
-        val a = Environment.DIRECTORY_MUSIC
-        Log.v(TAG, a.toString());
-
-        val b = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC)
-        Log.v(TAG, b.toString());
-
-        try {
-            val appSpecificExternalDir = File(this.getExternalFilesDir(null), "externalFile.txt")
-            appSpecificExternalDir.appendText("hello") // write
-            Toast.makeText(applicationContext, "Success gen", Toast.LENGTH_SHORT)
-                .show()
-
-            Log.v(TAG, "external path:" + appSpecificExternalDir.absolutePath.toString());
-        } catch (e: Exception) {
-            e.printStackTrace()
-            // on below line we are displaying a toast message as fail to generate PDF
-            Toast.makeText(applicationContext, "Fail to gen file", Toast.LENGTH_SHORT)
-                .show()
-        }
-    }
-
-    private fun checkRequestSize() {
-        val storageManager = applicationContext.getSystemService<StorageManager>()!!
-        val appSpecificInternalDirUuid: UUID = storageManager.getUuidForPath(filesDir)
-        val availableBytes: Long =
-            storageManager.getAllocatableBytes(appSpecificInternalDirUuid)
-        if (availableBytes >= NUM_BYTES_NEEDED_FOR_MY_APP) {
-            val str = "available GBs: "
-            Log.v(TAG, str + (availableBytes / 1024 / 1024 / 1024).toString());
-            storageManager.allocateBytes(
-                appSpecificInternalDirUuid, NUM_BYTES_NEEDED_FOR_MY_APP)
-        } else {
-            val storageIntent = Intent().apply {
-                // To request that the user remove all app cache files instead, set
-                // "action" to ACTION_CLEAR_APP_CACHE.
-                action = ACTION_MANAGE_STORAGE
-            }
-        }
     }
 }
 
